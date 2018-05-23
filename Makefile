@@ -284,6 +284,15 @@ benchmark/misc/function_call/build/Release/binding.node: all \
 		--directory="$(shell pwd)/benchmark/misc/function_call" \
 		--nodedir="$(shell pwd)"
 
+benchmark/misc/napi_function_call/build/Release/binding.node: all \
+		benchmark/misc/napi_function_call/binding.cc \
+		benchmark/misc/napi_function_call/binding.gyp
+	$(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp rebuild \
+		--python="$(PYTHON)" \
+		--directory="$(shell pwd)/benchmark/misc/napi_function_call" \
+		--nodedir="$(shell pwd)"
+
+
 # Implicitly depends on $(NODE_EXE).  We don't depend on it explicitly because
 # it always triggers a rebuild due to it being a .PHONY rule.  See the comment
 # near the build-addons rule for more background.
@@ -1042,7 +1051,8 @@ bench: bench-addons
 
 # Build required addons for benchmark before running it.
 .PHONY: bench-addons
-bench-addons: benchmark/misc/function_call/build/Release/binding.node
+bench-addons: benchmark/misc/function_call/build/Release/binding.node \
+				benchmark/misc/napi_function_call/build/Release/binding.node
 
 .PHONY: bench-addons-clean
 bench-addons-clean:
