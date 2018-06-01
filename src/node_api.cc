@@ -492,15 +492,51 @@ class TryCatch : public v8::TryCatch {
 
 //=== Function napi_callback wrapper =================================
 
-static const int kDataIndex = 0;
-static const int kEnvIndex = 1;
+static const int kFunctionIndex = 0;  // Used in CallbackBundle::cb[]
+static const int kGetterIndex = 0;    // Used in CallbackBundle::cb[]
+static const int kSetterIndex = 1;    // Used in CallbackBundle::cb[]
+static const int kCallbackCount = 2;  // Used in CallbackBundle::cb[]
+                                      // Max is "getter + setter" case
 
-static const int kFunctionIndex = 2;
-static const int kFunctionFieldCount = 3;
+static const int kCallbackBundleIndex = 0;  // The first and the only one
+static const int kInternalFieldCount = 1;
 
-static const int kGetterIndex = 2;
-static const int kSetterIndex = 3;
-static const int kAccessorFieldCount = 4;
+// Use this data structure to reduce the number
+// of GetInternalField() calls to only 1 (was: 3).
+// This leads to better performance in runtime.
+// Ref: benchmark/misc/napi_function_call
+struct CallbackBundle {
+  ~CallbackBundle() {
+    if (handle.IsEmpty()) {
+      return;
+    }
+
+    handle.ClearWeak();
+    handle.Reset();
+  }
+
+  // Bind the lifecycle of `this` C++ object to a JavaScript object.
+  // We never delete a CallbackBundle C++ object directly.
+  void BindLifecycleTo(v8::Isolate* isolate, v8::Local<v8::Object> obj) {
+    handle.Reset(isolate, obj);
+    handle.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
+  }
+
+  napi_env       env;      // Necessary to invoke C++ NAPI callback
+  void*          cb_data;  // The user provided callback data
+  napi_callback  cb[kCallbackCount];  // Max capacity is 2 (getter + setter)
+  v8::Persistent<v8::Object> handle;  // Die with this JavaScript object
+
+ private:
+  static void WeakCallback(v8::WeakCallbackInfo<CallbackBundle> const& info) {
+    // Use WeakCallback mechanism to delete the C++ `bundle` object.
+    // This will be called when object in `handle` is being GC-ed.
+    if (CallbackBundle* bundle = info.GetParameter()) {
+      bundle->handle.Reset();
+      delete bundle;
+    }
+  }
+};
 
 // Base class extended by classes that wrap V8 function and property callback
 // info.
@@ -534,8 +570,11 @@ class CallbackWrapperBase : public CallbackWrapper {
                         nullptr),
         _cbinfo(cbinfo),
         _cbdata(v8::Local<v8::Object>::Cast(cbinfo.Data())) {
-    _data = v8::Local<v8::External>::Cast(_cbdata->GetInternalField(kDataIndex))
-                ->Value();
+    // Note that there is no way we can tell whether `_bundle` is legit
+    _bundle = reinterpret_cast<CallbackBundle*>(
+        v8::Local<v8::External>::Cast(
+            _cbdata->GetInternalField(kCallbackBundleIndex))->Value());
+    _data = _bundle->cb_data;
   }
 
   napi_value GetNewTarget() override { return nullptr; }
@@ -544,14 +583,10 @@ class CallbackWrapperBase : public CallbackWrapper {
   void InvokeCallback() {
     napi_callback_info cbinfo_wrapper = reinterpret_cast<napi_callback_info>(
         static_cast<CallbackWrapper*>(this));
-    napi_callback cb = reinterpret_cast<napi_callback>(
-        v8::Local<v8::External>::Cast(
-            _cbdata->GetInternalField(kInternalFieldIndex))->Value());
 
-    napi_env env = static_cast<napi_env>(
-        v8::Local<v8::External>::Cast(
-            _cbdata->GetInternalField(kEnvIndex))->Value());
-
+    // Now we just use the pointers stored in `_bundle`
+    napi_env env = _bundle->env;
+    napi_callback cb = _bundle->cb[kInternalFieldIndex];
     napi_value result;
     NAPI_CALL_INTO_MODULE_THROW(env, result = cb(env, cbinfo_wrapper));
 
@@ -562,6 +597,8 @@ class CallbackWrapperBase : public CallbackWrapper {
 
   const Info& _cbinfo;
   const v8::Local<v8::Object> _cbdata;
+  // Note: the deletion of `_bundle` is with the the GC of _cbdata object
+  CallbackBundle* _bundle;
 };
 
 class FunctionCallbackWrapper
@@ -690,18 +727,19 @@ v8::Local<v8::Object> CreateFunctionCallbackData(napi_env env,
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
   v8::Local<v8::ObjectTemplate> otpl;
-  ENV_OBJECT_TEMPLATE(env, function_data, otpl, v8impl::kFunctionFieldCount);
+  ENV_OBJECT_TEMPLATE(env, function_data, otpl, v8impl::kInternalFieldCount);
   v8::Local<v8::Object> cbdata = otpl->NewInstance(context).ToLocalChecked();
 
+  CallbackBundle* bundle = new CallbackBundle();
+  bundle->cb[kFunctionIndex] = cb;
+  bundle->cb_data = data;
+  bundle->env = env;
+  bundle->BindLifecycleTo(env->isolate, cbdata);
+
   cbdata->SetInternalField(
-      v8impl::kEnvIndex,
-      v8::External::New(isolate, static_cast<void*>(env)));
-  cbdata->SetInternalField(
-      v8impl::kFunctionIndex,
-      v8::External::New(isolate, reinterpret_cast<void*>(cb)));
-  cbdata->SetInternalField(
-      v8impl::kDataIndex,
-      v8::External::New(isolate, data));
+      v8impl::kCallbackBundleIndex,
+      v8::External::New(isolate, reinterpret_cast<void*>(bundle)));
+
   return cbdata;
 }
 
@@ -717,28 +755,20 @@ v8::Local<v8::Object> CreateAccessorCallbackData(napi_env env,
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
 
   v8::Local<v8::ObjectTemplate> otpl;
-  ENV_OBJECT_TEMPLATE(env, accessor_data, otpl, v8impl::kAccessorFieldCount);
+  ENV_OBJECT_TEMPLATE(env, accessor_data, otpl, v8impl::kInternalFieldCount);
   v8::Local<v8::Object> cbdata = otpl->NewInstance(context).ToLocalChecked();
 
-  cbdata->SetInternalField(
-      v8impl::kEnvIndex,
-      v8::External::New(isolate, static_cast<void*>(env)));
-
-  if (getter != nullptr) {
-    cbdata->SetInternalField(
-        v8impl::kGetterIndex,
-        v8::External::New(isolate, reinterpret_cast<void*>(getter)));
-  }
-
-  if (setter != nullptr) {
-    cbdata->SetInternalField(
-        v8impl::kSetterIndex,
-        v8::External::New(isolate, reinterpret_cast<void*>(setter)));
-  }
+  CallbackBundle* bundle = new CallbackBundle();
+  bundle->cb[kGetterIndex] = getter;
+  bundle->cb[kSetterIndex] = setter;
+  bundle->cb_data = data;
+  bundle->env = env;
+  bundle->BindLifecycleTo(env->isolate, cbdata);
 
   cbdata->SetInternalField(
-      v8impl::kDataIndex,
-      v8::External::New(isolate, data));
+      v8impl::kCallbackBundleIndex,
+      v8::External::New(isolate, reinterpret_cast<void*>(bundle)));
+
   return cbdata;
 }
 
