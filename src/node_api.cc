@@ -517,15 +517,15 @@ struct CallbackBundle {
 
   // Bind the lifecycle of `this` C++ object to a JavaScript object.
   // We never delete a CallbackBundle C++ object directly.
-  void BindLifecycleTo(v8::Isolate* isolate, v8::Local<v8::Object> obj) {
-    handle.Reset(isolate, obj);
+  void BindLifecycleTo(v8::Isolate* isolate, v8::Local<v8::Value> target) {
+    handle.Reset(isolate, target);
     handle.SetWeak(this, WeakCallback, v8::WeakCallbackType::kParameter);
   }
 
   napi_env       env;      // Necessary to invoke C++ NAPI callback
   void*          cb_data;  // The user provided callback data
   napi_callback  cb[kCallbackCount];  // Max capacity is 2 (getter + setter)
-  v8::Persistent<v8::Object> handle;  // Die with this JavaScript object
+  v8::Persistent<v8::Value> handle;   // Die with this JavaScript object
 
  private:
   static void WeakCallback(v8::WeakCallbackInfo<CallbackBundle> const& info) {
@@ -568,12 +568,10 @@ class CallbackWrapperBase : public CallbackWrapper {
       : CallbackWrapper(JsValueFromV8LocalValue(cbinfo.This()),
                         args_length,
                         nullptr),
-        _cbinfo(cbinfo),
-        _cbdata(v8::Local<v8::Object>::Cast(cbinfo.Data())) {
+        _cbinfo(cbinfo) {
     // Note that there is no way we can tell whether `_bundle` is legit
     _bundle = reinterpret_cast<CallbackBundle*>(
-        v8::Local<v8::External>::Cast(
-            _cbdata->GetInternalField(kCallbackBundleIndex))->Value());
+        v8::Local<v8::External>::Cast(cbinfo.Data())->Value());
     _data = _bundle->cb_data;
   }
 
@@ -596,7 +594,7 @@ class CallbackWrapperBase : public CallbackWrapper {
   }
 
   const Info& _cbinfo;
-  const v8::Local<v8::Object> _cbdata;
+  // const v8::Local<v8::Object> _cbdata;
   // Note: the deletion of `_bundle` is with the the GC of _cbdata object
   CallbackBundle* _bundle;
 };
@@ -720,25 +718,16 @@ class SetterCallbackWrapper
 // Creates an object to be made available to the static function callback
 // wrapper, used to retrieve the native callback function and data pointer.
 static
-v8::Local<v8::Object> CreateFunctionCallbackData(napi_env env,
-                                                 napi_callback cb,
-                                                 void* data) {
-  v8::Isolate* isolate = env->isolate;
-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
-
-  v8::Local<v8::ObjectTemplate> otpl;
-  ENV_OBJECT_TEMPLATE(env, function_data, otpl, v8impl::kInternalFieldCount);
-  v8::Local<v8::Object> cbdata = otpl->NewInstance(context).ToLocalChecked();
-
+v8::Local<v8::Value> CreateFunctionCallbackData(napi_env env,
+                                                napi_callback cb,
+                                                void* data) {
   CallbackBundle* bundle = new CallbackBundle();
   bundle->cb[kFunctionIndex] = cb;
   bundle->cb_data = data;
   bundle->env = env;
+  auto cbdata = v8::External::New(env->isolate,
+      reinterpret_cast<void*>(bundle));
   bundle->BindLifecycleTo(env->isolate, cbdata);
-
-  cbdata->SetInternalField(
-      v8impl::kCallbackBundleIndex,
-      v8::External::New(isolate, reinterpret_cast<void*>(bundle)));
 
   return cbdata;
 }
@@ -747,27 +736,18 @@ v8::Local<v8::Object> CreateFunctionCallbackData(napi_env env,
 // callback wrapper, used to retrieve the native getter/setter callback
 // function and data pointer.
 static
-v8::Local<v8::Object> CreateAccessorCallbackData(napi_env env,
-                                                 napi_callback getter,
-                                                 napi_callback setter,
-                                                 void* data) {
-  v8::Isolate* isolate = env->isolate;
-  v8::Local<v8::Context> context = isolate->GetCurrentContext();
-
-  v8::Local<v8::ObjectTemplate> otpl;
-  ENV_OBJECT_TEMPLATE(env, accessor_data, otpl, v8impl::kInternalFieldCount);
-  v8::Local<v8::Object> cbdata = otpl->NewInstance(context).ToLocalChecked();
-
+v8::Local<v8::Value> CreateAccessorCallbackData(napi_env env,
+                                                napi_callback getter,
+                                                napi_callback setter,
+                                                void* data) {
   CallbackBundle* bundle = new CallbackBundle();
   bundle->cb[kGetterIndex] = getter;
   bundle->cb[kSetterIndex] = setter;
   bundle->cb_data = data;
   bundle->env = env;
+  auto cbdata = v8::External::New(env->isolate,
+      reinterpret_cast<void*>(bundle));
   bundle->BindLifecycleTo(env->isolate, cbdata);
-
-  cbdata->SetInternalField(
-      v8impl::kCallbackBundleIndex,
-      v8::External::New(isolate, reinterpret_cast<void*>(bundle)));
 
   return cbdata;
 }
@@ -1069,7 +1049,7 @@ napi_status napi_create_function(napi_env env,
   v8::Isolate* isolate = env->isolate;
   v8::Local<v8::Function> return_value;
   v8::EscapableHandleScope scope(isolate);
-  v8::Local<v8::Object> cbdata =
+  v8::Local<v8::Value> cbdata =
       v8impl::CreateFunctionCallbackData(env, cb, callback_data);
 
   RETURN_STATUS_IF_FALSE(env, !cbdata.IsEmpty(), napi_generic_failure);
@@ -1109,7 +1089,7 @@ napi_status napi_define_class(napi_env env,
   v8::Isolate* isolate = env->isolate;
 
   v8::EscapableHandleScope scope(isolate);
-  v8::Local<v8::Object> cbdata =
+  v8::Local<v8::Value> cbdata =
       v8impl::CreateFunctionCallbackData(env, constructor, callback_data);
 
   RETURN_STATUS_IF_FALSE(env, !cbdata.IsEmpty(), napi_generic_failure);
@@ -1145,7 +1125,7 @@ napi_status napi_define_class(napi_env env,
     // This code is similar to that in napi_define_properties(); the
     // difference is it applies to a template instead of an object.
     if (p->getter != nullptr || p->setter != nullptr) {
-      v8::Local<v8::Object> cbdata = v8impl::CreateAccessorCallbackData(
+      v8::Local<v8::Value> cbdata = v8impl::CreateAccessorCallbackData(
         env, p->getter, p->setter, p->data);
 
       tpl->PrototypeTemplate()->SetAccessor(
@@ -1156,7 +1136,7 @@ napi_status napi_define_class(napi_env env,
         v8::AccessControl::DEFAULT,
         attributes);
     } else if (p->method != nullptr) {
-      v8::Local<v8::Object> cbdata =
+      v8::Local<v8::Value> cbdata =
           v8impl::CreateFunctionCallbackData(env, p->method, p->data);
 
       RETURN_STATUS_IF_FALSE(env, !cbdata.IsEmpty(), napi_generic_failure);
@@ -1518,7 +1498,7 @@ napi_status napi_define_properties(napi_env env,
         v8impl::V8PropertyAttributesFromDescriptor(p);
 
     if (p->getter != nullptr || p->setter != nullptr) {
-      v8::Local<v8::Object> cbdata = v8impl::CreateAccessorCallbackData(
+      v8::Local<v8::Value> cbdata = v8impl::CreateAccessorCallbackData(
         env,
         p->getter,
         p->setter,
@@ -1537,7 +1517,7 @@ napi_status napi_define_properties(napi_env env,
         return napi_set_last_error(env, napi_invalid_arg);
       }
     } else if (p->method != nullptr) {
-      v8::Local<v8::Object> cbdata =
+      v8::Local<v8::Value> cbdata =
           v8impl::CreateFunctionCallbackData(env, p->method, p->data);
 
       RETURN_STATUS_IF_FALSE(env, !cbdata.IsEmpty(), napi_generic_failure);
