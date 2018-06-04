@@ -506,15 +506,6 @@ static const int kInternalFieldCount = 1;
 // This leads to better performance in runtime.
 // Ref: benchmark/misc/napi_function_call
 struct CallbackBundle {
-  ~CallbackBundle() {
-    if (handle.IsEmpty()) {
-      return;
-    }
-
-    handle.ClearWeak();
-    handle.Reset();
-  }
-
   // Bind the lifecycle of `this` C++ object to a JavaScript object.
   // We never delete a CallbackBundle C++ object directly.
   void BindLifecycleTo(v8::Isolate* isolate, v8::Local<v8::Value> target) {
@@ -524,15 +515,14 @@ struct CallbackBundle {
 
   napi_env       env;      // Necessary to invoke C++ NAPI callback
   void*          cb_data;  // The user provided callback data
-  napi_callback  cb[kCallbackCount];  // Max capacity is 2 (getter + setter)
-  v8::Persistent<v8::Value> handle;   // Die with this JavaScript object
+  napi_callback  cb[kCallbackCount];   // Max capacity is 2 (getter + setter)
+  node::Persistent<v8::Value> handle;  // Die with this JavaScript object
 
  private:
   static void WeakCallback(v8::WeakCallbackInfo<CallbackBundle> const& info) {
     // Use WeakCallback mechanism to delete the C++ `bundle` object.
     // This will be called when object in `handle` is being GC-ed.
     if (CallbackBundle* bundle = info.GetParameter()) {
-      bundle->handle.Reset();
       delete bundle;
     }
   }
