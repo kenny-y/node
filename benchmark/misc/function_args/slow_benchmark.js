@@ -25,21 +25,19 @@ try {
   process.exit(0);
 }
 
-const argsTypes = ['String', 'Number', 'Object', 'Array', 'Typedarray',
-                   'StringArray', 'ObjectArray', 'ArrayArray',
-                   '10Arguments', '100Arguments', '1000Arguments'];
+const slowArgsTypes = ['LargeArray', 'LargeObject', 'HugeArray', 'LongString'];
 
-let types = [];
+let slowTypes = [];
 
 ['v8', 'napi'].forEach(function(type) {
-  argsTypes.forEach(function(arg) {
-    types.push(type + '-' + arg);
+  slowArgsTypes.forEach(function(arg) {
+    slowTypes.push(type + '-' + arg);
   });
 });
 
 const bench = common.createBenchmark(main, {
-  type: types,
-  n: [1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
+  type: slowTypes,
+  n: [1, 5, 10]
 });
 
 function main({ n, type }) {
