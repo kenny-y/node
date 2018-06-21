@@ -61,10 +61,10 @@ void CallWithTypedarray(const v8::FunctionCallbackInfo<v8::Value>& args) {
 void CallWithArguments(const v8::FunctionCallbackInfo<v8::Value>& args) {
   assert(args.Length() > 1 && args[0]->IsNumber());
   if (args.Length() > 1 && args[0]->IsNumber()) {
-    int32_t loop = args[0].As<v8::Number>()->Value();
+    int32_t loop = args[0].As<v8::Uint32>()->Value();
     for (int32_t i = 1; i < loop; ++i) {
-      assert(args[i]->IsNumber());
-      uint32_t value = args[i].As<v8::Number>()->Value();
+      assert(args[i]->IsUint32());
+      uint32_t value = args[i].As<v8::Uint32>()->Value();
     }
   }
 }

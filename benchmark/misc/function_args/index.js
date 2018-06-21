@@ -35,7 +35,7 @@ const generateArgs = (argType) => {
   } else if (argType === 'LongString') {
     argsArray.push(Buffer.alloc(65536, '42').toString());
   } else if (argType === 'Number') {
-    argsArray.push(3.14159165358964);
+    argsArray.push(31415916);
   } else if (argType === 'Object') {
     argsArray.push({
       map: 'add',

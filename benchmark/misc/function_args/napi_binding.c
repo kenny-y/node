@@ -183,7 +183,7 @@ static napi_value CallWithArguments(napi_env env, napi_callback_info info) {
       assert(status == napi_ok);
       assert(types[0] == napi_number);
 
-      napi_value value;
+      uint32_t value = 0;
       status = napi_get_value_uint32(env, args[i], &value);
       assert(status == napi_ok);
     }
