@@ -82,8 +82,8 @@ const getArgs = (type) => {
 
 let benchTypes = [];
 
-['v8', 'napi'].forEach((type) => {
-  argsTypes.forEach((arg) => {
+argsTypes.forEach((arg) => {
+  ['v8', 'napi'].forEach((type) => {
     benchTypes.push(type + '-' + arg);
   });
 });
