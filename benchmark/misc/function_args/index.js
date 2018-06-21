@@ -6,7 +6,6 @@
 
 const assert = require('assert');
 const common = require('../../common.js');
-const {generateArgs} = require('./generate_args.js');
 
 let v8;
 let napi;
@@ -26,20 +25,72 @@ try {
 }
 
 const argsTypes = ['String', 'Number', 'Object', 'Array', 'Typedarray',
-                   'StringArray', 'ObjectArray', 'ArrayArray',
                    '10Arguments', '100Arguments', '1000Arguments'];
 
-let types = [];
+const generateArgs = (argType) => {
+  let argsArray = [];
 
-['v8', 'napi'].forEach(function(type) {
-  argsTypes.forEach(function(arg) {
-    types.push(type + '-' + arg);
+  if (argType === 'String') {
+    argsArray.push('The quick brown fox jumps over the lazy dog');
+  } else if (argType === 'LongString') {
+    argsArray.push(Buffer.alloc(65536, '42').toString());
+  } else if (argType === 'Number') {
+    argsArray.push(3.14159165358964);
+  } else if (argType === 'Object') {
+    argsArray.push({
+      map: 'add',
+      operand: 10,
+      data: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      reduce: 'add',
+    });
+  } else if (argType === 'Array') {
+    let arr = [];
+    for (let i = 0; i < 50; ++ i) {
+      arr.push(Math.random() * 10e9);
+    }
+    argsArray.push(arr);
+  } else if (argType === 'Typedarray') {
+    let arr = new Uint32Array(1000);
+    for (let i = 0; i < 1000; ++ i) {
+      arr[i] = Math.random() * 4294967296;
+    }
+    argsArray.push(arr);
+  } else if (argType === '10Arguments') {
+    argsArray.push(10);
+    Array(10 - 1).fill().map((_, i) => {
+      argsArray = [...argsArray, ...generateArgs('Number')];
+    });
+  } else if (argType === '100Arguments') {
+    argsArray.push(100);
+    Array(100 - 1).fill().map((_, i) => {
+      argsArray = [...argsArray, ...generateArgs('Number')];
+    });
+  } else if (argType === '1000Arguments') {
+    argsArray.push(1000);
+    Array(1000 - 1).fill().map((_, i) => {
+      argsArray = [...argsArray, ...generateArgs('Number')];
+    });
+  }
+
+  return argsArray;
+};
+
+const getArgs = (type) => {
+  let argType = type.split('-')[1];
+  return generateArgs(argType);
+};
+
+let benchTypes = [];
+
+['v8', 'napi'].forEach((type) => {
+  argsTypes.forEach((arg) => {
+    benchTypes.push(type + '-' + arg);
   });
 });
 
 const bench = common.createBenchmark(main, {
-  type: types,
-  n: [1, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
+  type: benchTypes,
+  n: [1, 1e1, 1e2, 1e3, 1e4, 1e5],
 });
 
 function main({ n, type }) {
@@ -48,7 +99,7 @@ function main({ n, type }) {
   const fn = bindings[methodName];
 
   if (fn) {
-    let args = generateArgs(type);
+    let args = getArgs(type);
 
     bench.start();
     for (var i = 0; i < n; i++) {

@@ -45,8 +45,6 @@ void CallWithObject(const v8::FunctionCallbackInfo<v8::Value>& args) {
 }
 
 void CallWithTypedarray(const v8::FunctionCallbackInfo<v8::Value>& args) {
-  v8::Isolate* isolate = args.GetIsolate();
-
   assert(args.Length() == 1 && args[0]->IsArrayBufferView());
   if (args.Length() == 1 && args[0]->IsArrayBufferView()) {
     assert(args[0]->IsArrayBufferView());
@@ -57,6 +55,17 @@ void CallWithTypedarray(const v8::FunctionCallbackInfo<v8::Value>& args) {
     auto buffer = view->Buffer();
     auto contents = buffer->GetContents();
     auto data = static_cast<uint32_t*>(contents.Data()) + byte_offset;
+  }
+}
+
+void CallWithArguments(const v8::FunctionCallbackInfo<v8::Value>& args) {
+  assert(args.Length() > 1 && args[0]->IsNumber());
+  if (args.Length() > 1 && args[0]->IsNumber()) {
+    int32_t loop = args[0].As<v8::Number>()->Value();
+    for (int32_t i = 1; i < loop; ++i) {
+      assert(args[i]->IsNumber());
+      uint32_t value = args[i].As<v8::Number>()->Value();
+    }
   }
 }
 
@@ -71,6 +80,10 @@ void Initialize(v8::Local<v8::Object> target) {
   NODE_SET_METHOD(target, "callWithNumber", CallWithNumber);
   NODE_SET_METHOD(target, "callWithObject", CallWithObject);
   NODE_SET_METHOD(target, "callWithTypedarray", CallWithTypedarray);
+
+  NODE_SET_METHOD(target, "callWith10Arguments", CallWithArguments);
+  NODE_SET_METHOD(target, "callWith100Arguments", CallWithArguments);
+  NODE_SET_METHOD(target, "callWith1000Arguments", CallWithArguments);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)

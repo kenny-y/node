@@ -153,6 +153,43 @@ static napi_value CallWithTypedarray(napi_env env, napi_callback_info info) {
 
     uint32_t* input_integers = (uint32_t*)((data) + byte_offset);
   }
+
+  return NULL;
+}
+
+static napi_value CallWithArguments(napi_env env, napi_callback_info info) {
+  napi_status status;
+
+  size_t argc = 1;
+  napi_value args[10000];
+  status = napi_get_cb_info(env, info, &argc, NULL, NULL, NULL);
+  assert(status == napi_ok);
+
+  status = napi_get_cb_info(env, info, &argc, args, NULL, NULL);
+  assert(status == napi_ok);
+
+  napi_valuetype types[1];
+  status = napi_typeof(env, args[0], types);
+  assert(status == napi_ok);
+
+  assert(argc > 1 && types[0] == napi_number);
+  if (argc > 1 && types[0] == napi_number) {
+    uint32_t loop = 0;
+    status = napi_get_value_uint32(env, args[0], &loop);
+    assert(status == napi_ok);
+
+    for (uint32_t i = 1; i < loop; ++i) {
+      status = napi_typeof(env, args[i], types);
+      assert(status == napi_ok);
+      assert(types[0] == napi_number);
+
+      napi_value value;
+      status = napi_get_value_uint32(env, args[i], &value);
+      assert(status == napi_ok);
+    }
+  }
+
+  return NULL;
 }
 
 #define EXPORT_FUNC(name, func) \
@@ -183,6 +220,10 @@ NAPI_MODULE_INIT() {
 
   EXPORT_FUNC("callWithObject", CallWithObject);
   EXPORT_FUNC("callWithTypedarray", CallWithTypedarray);
+
+  EXPORT_FUNC("callWith10Arguments", CallWithArguments);
+  EXPORT_FUNC("callWith100Arguments", CallWithArguments);
+  EXPORT_FUNC("callWith1000Arguments", CallWithArguments);
 
   return exports;
 }
