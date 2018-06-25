@@ -4,7 +4,6 @@
 // Reports n of calls per second.
 'use strict';
 
-const assert = require('assert');
 const common = require('../../common.js');
 
 let v8;
@@ -44,29 +43,32 @@ const generateArgs = (argType) => {
       reduce: 'add',
     });
   } else if (argType === 'Array') {
-    let arr = [];
-    for (let i = 0; i < 50; ++ i) {
+    const arr = [];
+    for (let i = 0; i < 50; ++i) {
       arr.push(Math.random() * 10e9);
     }
     argsArray.push(arr);
   } else if (argType === 'Typedarray') {
-    let arr = new Uint32Array(1000);
-    for (let i = 0; i < 1000; ++ i) {
+    const arr = new Uint32Array(1000);
+    for (let i = 0; i < 1000; ++i) {
       arr[i] = Math.random() * 4294967296;
     }
     argsArray.push(arr);
   } else if (argType === '10Arguments') {
     argsArray.push(10);
+    // eslint-disable-next-line array-callback-return
     Array(10 - 1).fill().map((_, i) => {
       argsArray = [...argsArray, ...generateArgs('Number')];
     });
   } else if (argType === '100Arguments') {
     argsArray.push(100);
+    // eslint-disable-next-line array-callback-return
     Array(100 - 1).fill().map((_, i) => {
       argsArray = [...argsArray, ...generateArgs('Number')];
     });
   } else if (argType === '1000Arguments') {
     argsArray.push(1000);
+    // eslint-disable-next-line array-callback-return
     Array(1000 - 1).fill().map((_, i) => {
       argsArray = [...argsArray, ...generateArgs('Number')];
     });
@@ -76,11 +78,10 @@ const generateArgs = (argType) => {
 };
 
 const getArgs = (type) => {
-  let argType = type.split('-')[1];
-  return generateArgs(argType);
+  return generateArgs(type.split('-')[1]);
 };
 
-let benchTypes = [];
+const benchTypes = [];
 
 argsTypes.forEach((arg) => {
   ['v8', 'napi'].forEach((type) => {
@@ -95,11 +96,11 @@ const bench = common.createBenchmark(main, {
 
 function main({ n, type }) {
   const bindings = type.split('-')[0] === 'v8' ? v8 : napi;
-  const methodName = 'callWith' + type.split('-')[1]
+  const methodName = 'callWith' + type.split('-')[1];
   const fn = bindings[methodName];
 
   if (fn) {
-    let args = getArgs(type);
+    const args = getArgs(type);
 
     bench.start();
     for (var i = 0; i < n; i++) {
