@@ -115,13 +115,19 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
   // so need to check it from the callback.
 
   const mc = common.mustCall(function pb() {
-    testInitialized(this, 'PBKDF2');
+    testInitialized(this, 'AsyncWrap');
   });
   crypto.pbkdf2('password', 'salt', 1, 20, 'sha256', mc);
 
   crypto.randomBytes(1, common.mustCall(function rb() {
-    testInitialized(this, 'RandomBytes');
+    testInitialized(this, 'AsyncWrap');
   }));
+
+  if (typeof process.binding('crypto').scrypt === 'function') {
+    crypto.scrypt('password', 'salt', 8, common.mustCall(function() {
+      testInitialized(this, 'AsyncWrap');
+    }));
+  }
 }
 
 
@@ -247,12 +253,6 @@ if (common.hasCrypto) { // eslint-disable-line node-core/crypto-check
     assert.strictEqual(err, 0);
     testInitialized(req, 'TCPConnectWrap');
   }));
-}
-
-
-{
-  const TimerWrap = process.binding('timer_wrap').Timer;
-  testInitialized(new TimerWrap(), 'Timer');
 }
 
 

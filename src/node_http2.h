@@ -592,16 +592,12 @@ class Http2Stream : public AsyncWrap,
 
   bool AddHeader(nghttp2_rcbuf* name, nghttp2_rcbuf* value, uint8_t flags);
 
-  inline nghttp2_header* headers() {
-    return current_headers_.data();
+  inline std::vector<nghttp2_header> move_headers() {
+    return std::move(current_headers_);
   }
 
   inline nghttp2_headers_category headers_category() const {
     return current_headers_category_;
-  }
-
-  inline size_t headers_count() const {
-    return current_headers_.size();
   }
 
   void StartHeaders(nghttp2_headers_category category);
@@ -651,8 +647,8 @@ class Http2Stream : public AsyncWrap,
   Statistics statistics_ = {};
 
  private:
-  Http2Session* session_;                       // The Parent HTTP/2 Session
-  int32_t id_;                                  // The Stream Identifier
+  Http2Session* session_ = nullptr;             // The Parent HTTP/2 Session
+  int32_t id_ = 0;                              // The Stream Identifier
   int32_t code_ = NGHTTP2_NO_ERROR;             // The RST_STREAM code (if any)
   int flags_ = NGHTTP2_STREAM_FLAG_NONE;        // Internal state flags
 
@@ -1203,6 +1199,7 @@ class ExternalHeader :
     }
 
     if (may_internalize && vec.len < 64) {
+      nghttp2_rcbuf_decref(buf);
       // This is a short header name, so there is a good chance V8 already has
       // it internalized.
       return GetInternalizedString(env, vec);

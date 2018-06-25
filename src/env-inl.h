@@ -269,20 +269,12 @@ inline bool Environment::TickInfo::has_scheduled() const {
   return fields_[kHasScheduled] == 1;
 }
 
-inline bool Environment::TickInfo::has_thrown() const {
-  return fields_[kHasThrown] == 1;
-}
-
 inline bool Environment::TickInfo::has_promise_rejections() const {
   return fields_[kHasPromiseRejections] == 1;
 }
 
 inline void Environment::TickInfo::promise_rejections_toggle_on() {
   fields_[kHasPromiseRejections] = 1;
-}
-
-inline void Environment::TickInfo::set_has_thrown(bool state) {
-  fields_[kHasThrown] = state ? 1 : 0;
 }
 
 inline void Environment::AssignToContext(v8::Local<v8::Context> context,
@@ -332,6 +324,14 @@ inline v8::Isolate* Environment::isolate() const {
 
 inline tracing::Agent* Environment::tracing_agent() const {
   return tracing_agent_;
+}
+
+inline Environment* Environment::from_timer_handle(uv_timer_t* handle) {
+  return ContainerOf(&Environment::timer_handle_, handle);
+}
+
+inline uv_timer_t* Environment::timer_handle() {
+  return &timer_handle_;
 }
 
 inline Environment* Environment::from_immediate_check_handle(
@@ -598,11 +598,11 @@ inline bool Environment::is_main_thread() const {
   return thread_id_ == 0;
 }
 
-inline double Environment::thread_id() const {
+inline uint64_t Environment::thread_id() const {
   return thread_id_;
 }
 
-inline void Environment::set_thread_id(double id) {
+inline void Environment::set_thread_id(uint64_t id) {
   thread_id_ = id;
 }
 

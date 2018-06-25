@@ -97,9 +97,12 @@
       'lib/internal/crypto/hash.js',
       'lib/internal/crypto/pbkdf2.js',
       'lib/internal/crypto/random.js',
+      'lib/internal/crypto/scrypt.js',
       'lib/internal/crypto/sig.js',
       'lib/internal/crypto/util.js',
       'lib/internal/constants.js',
+      'lib/internal/dns/promises.js',
+      'lib/internal/dns/utils.js',
       'lib/internal/encoding.js',
       'lib/internal/errors.js',
       'lib/internal/error-serdes.js',
@@ -127,12 +130,13 @@
       'lib/internal/os.js',
       'lib/internal/priority_queue.js',
       'lib/internal/process/esm_loader.js',
-      'lib/internal/process/methods.js',
+      'lib/internal/process/main_thread_only.js',
       'lib/internal/process/next_tick.js',
+      'lib/internal/process/per_thread.js',
       'lib/internal/process/promises.js',
       'lib/internal/process/stdio.js',
       'lib/internal/process/warning.js',
-      'lib/internal/process.js',
+      'lib/internal/process/worker_thread_only.js',
       'lib/internal/querystring.js',
       'lib/internal/process/write-coverage.js',
       'lib/internal/readline.js',
@@ -317,6 +321,7 @@
         'src/cares_wrap.cc',
         'src/connection_wrap.cc',
         'src/connect_wrap.cc',
+        'src/debug_utils.cc',
         'src/env.cc',
         'src/exceptions.cc',
         'src/fs_event_wrap.cc',
@@ -343,6 +348,7 @@
         'src/node_platform.cc',
         'src/node_perf.cc',
         'src/node_postmortem_metadata.cc',
+        'src/node_process.cc',
         'src/node_serdes.cc',
         'src/node_trace_events.cc',
         'src/node_types.cc',
@@ -365,7 +371,7 @@
         'src/stream_pipe.cc',
         'src/stream_wrap.cc',
         'src/tcp_wrap.cc',
-        'src/timer_wrap.cc',
+        'src/timers.cc',
         'src/tracing/agent.cc',
         'src/tracing/node_trace_buffer.cc',
         'src/tracing/node_trace_writer.cc',
@@ -496,9 +502,6 @@
           'defines': [ 'HAVE_INSPECTOR=0' ]
         }],
         [ 'OS=="win"', {
-          'sources': [
-            'src/backtrace_win32.cc',
-          ],
           'conditions': [
             [ 'node_intermediate_lib_type!="static_library"', {
               'sources': [
@@ -507,8 +510,6 @@
             }],
           ],
           'libraries': [ '-lpsapi.lib' ]
-        }, { # POSIX
-          'sources': [ 'src/backtrace_posix.cc' ],
         }],
         [ 'node_use_etw=="true"', {
           'defines': [ 'HAVE_ETW=1' ],
@@ -620,7 +621,7 @@
               # Categories to export.
               '-CAES,BF,BIO,DES,DH,DSA,EC,ECDH,ECDSA,ENGINE,EVP,HMAC,MD4,MD5,'
               'PSK,RC2,RC4,RSA,SHA,SHA0,SHA1,SHA256,SHA512,SOCK,STDIO,TLSEXT,'
-              'FP_API,TLS1_METHOD,TLS1_1_METHOD,TLS1_2_METHOD',
+              'FP_API,TLS1_METHOD,TLS1_1_METHOD,TLS1_2_METHOD,SCRYPT',
               # Defines.
               '-DWIN32',
               # Symbols to filter from the export list.

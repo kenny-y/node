@@ -347,6 +347,8 @@ For more information about the governance of the Node.js project, see
 **Daniel Bevenius** &lt;daniel.bevenius@gmail.com&gt;
 * [DavidCai1993](https://github.com/DavidCai1993) -
 **David Cai** &lt;davidcai1993@yahoo.com&gt; (he/him)
+* [davisjam](https://github.com/davisjam) -
+**Jamie Davis** &lt;davisjam@vt.edu&gt; (he/him)
 * [devsnek](https://github.com/devsnek) -
 **Gus Caplan** &lt;me@gus.host&gt; (he/him)
 * [edsadr](https://github.com/edsadr) -
@@ -381,8 +383,6 @@ For more information about the governance of the Node.js project, see
 **Yuta Hiroto** &lt;hello@hiroppy.me&gt; (he/him)
 * [iarna](https://github.com/iarna) -
 **Rebecca Turner** &lt;me@re-becca.org&gt;
-* [imran-iq](https://github.com/imran-iq) -
-**Imran Iqbal** &lt;imran@imraniqbal.org&gt;
 * [imyller](https://github.com/imyller) -
 **Ilkka Myller** &lt;ilkka.myller@nodefield.com&gt;
 * [indutny](https://github.com/indutny) -
@@ -433,8 +433,6 @@ For more information about the governance of the Node.js project, see
 **Matteo Collina** &lt;matteo.collina@gmail.com&gt; (he/him)
 * [mhdawson](https://github.com/mhdawson) -
 **Michael Dawson** &lt;michael_dawson@ca.ibm.com&gt; (he/him)
-* [micnic](https://github.com/micnic) -
-**Nicu Micleușanu** &lt;micnic90@gmail.com&gt; (he/him)
 * [misterdjules](https://github.com/misterdjules) -
 **Julien Gilli** &lt;jgilli@nodejs.org&gt;
 * [mmarchini](https://github.com/mmarchini) -
@@ -465,12 +463,6 @@ For more information about the governance of the Node.js project, see
 **Refael Ackermann** &lt;refack@gmail.com&gt; (he/him)
 * [richardlau](https://github.com/richardlau) -
 **Richard Lau** &lt;riclau@uk.ibm.com&gt;
-* [rmg](https://github.com/rmg) -
-**Ryan Graham** &lt;r.m.graham@gmail.com&gt;
-* [robertkowalski](https://github.com/robertkowalski) -
-**Robert Kowalski** &lt;rok@kowalski.gd&gt;
-* [romankl](https://github.com/romankl) -
-**Roman Klauke** &lt;romaaan.git@gmail.com&gt;
 * [ronkorving](https://github.com/ronkorving) -
 **Ron Korving** &lt;ron@ronkorving.nl&gt;
 * [RReverser](https://github.com/RReverser) -
@@ -540,12 +532,16 @@ For more information about the governance of the Node.js project, see
 
 ### Collaborator Emeriti
 
+* [imran-iq](https://github.com/imran-iq) -
+**Imran Iqbal** &lt;imran@imraniqbal.org&gt;
 * [isaacs](https://github.com/isaacs) -
 **Isaac Z. Schlueter** &lt;i@izs.me&gt;
 * [lxe](https://github.com/lxe) -
 **Aleksey Smolenchuk** &lt;lxe@lxe.co&gt;
 * [matthewloring](https://github.com/matthewloring) -
 **Matthew Loring** &lt;mattloring@google.com&gt;
+* [micnic](https://github.com/micnic) -
+**Nicu Micleușanu** &lt;micnic90@gmail.com&gt; (he/him)
 * [mikeal](https://github.com/mikeal) -
 **Mikeal Rogers** &lt;mikeal.rogers@gmail.com&gt;
 * [monsanto](https://github.com/monsanto) -
@@ -558,6 +554,12 @@ For more information about the governance of the Node.js project, see
 **Bert Belder** &lt;bertbelder@gmail.com&gt;
 * [rlidwka](https://github.com/rlidwka) -
 **Alex Kocharin** &lt;alex@kocharin.ru&gt;
+* [rmg](https://github.com/rmg) -
+**Ryan Graham** &lt;r.m.graham@gmail.com&gt;
+* [robertkowalski](https://github.com/robertkowalski) -
+**Robert Kowalski** &lt;rok@kowalski.gd&gt;
+* [romankl](https://github.com/romankl) -
+**Roman Klauke** &lt;romaaan.git@gmail.com&gt;
 * [tellnes](https://github.com/tellnes) -
 **Christian Tellnes** &lt;christian@tellnes.no&gt;
 * [tunniclm](https://github.com/tunniclm) -
@@ -576,8 +578,6 @@ Node.js releases are signed with one of the following GPG keys:
 `B9AE9905FFD7803F25714661B63B535A4C206CA9`
 * **Gibson Fahnestock** &lt;gibfahn@gmail.com&gt;
 `77984A986EBC2AA786BC0F66B01FBB92821C587A`
-* **Italo A. Casas** &lt;me@italoacasas.com&gt;
-`56730D5401028683275BD23C23EFEFE93C4CFFFE`
 * **James M Snell** &lt;jasnell@keybase.io&gt;
 `71DCFD284A79C3B38668286BC97EC7A07EDE3FC1`
 * **Jeremiah Senkpiel** &lt;fishrock@keybase.io&gt;
@@ -595,7 +595,6 @@ The full set of trusted release keys can be imported by running:
 gpg --keyserver pool.sks-keyservers.net --recv-keys 94AE36675C464D64BAFA68DD7434390BDBE9B9C5
 gpg --keyserver pool.sks-keyservers.net --recv-keys B9AE9905FFD7803F25714661B63B535A4C206CA9
 gpg --keyserver pool.sks-keyservers.net --recv-keys 77984A986EBC2AA786BC0F66B01FBB92821C587A
-gpg --keyserver pool.sks-keyservers.net --recv-keys 56730D5401028683275BD23C23EFEFE93C4CFFFE
 gpg --keyserver pool.sks-keyservers.net --recv-keys 71DCFD284A79C3B38668286BC97EC7A07EDE3FC1
 gpg --keyserver pool.sks-keyservers.net --recv-keys FD3A5288F042B6850C66B31F09FE44734EB7990E
 gpg --keyserver pool.sks-keyservers.net --recv-keys 8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600
@@ -612,6 +611,8 @@ Previous releases may also have been signed with one of the following GPG keys:
 `9554F04D7259F04124DE6B476D5A82AC7E37093B`
 * **Isaac Z. Schlueter** &lt;i@izs.me&gt;
 `93C7E9E91B49E432C2F75674B0A78B0A6C481CF6`
+* **Italo A. Casas** &lt;me@italoacasas.com&gt;
+`56730D5401028683275BD23C23EFEFE93C4CFFFE`
 * **Julien Gilli** &lt;jgilli@fastmail.fm&gt;
 `114F43EE0176B71C7BC219DD50A3051F888C628D`
 * **Timothy J Fontaine** &lt;tjfontaine@gmail.com&gt;

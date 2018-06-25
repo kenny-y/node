@@ -274,13 +274,13 @@ test-valgrind: all
 test-check-deopts: all
 	$(PYTHON) tools/test.py $(PARALLEL_ARGS) --mode=$(BUILDTYPE_LOWER) --check-deopts parallel sequential
 
-benchmark/misc/function_call/build/Release/binding.node: all \
-		benchmark/misc/function_call/napi_binding.c \
-		benchmark/misc/function_call/binding.cc \
-		benchmark/misc/function_call/binding.gyp
+benchmark/napi/function_call/build/Release/binding.node: all \
+		benchmark/napi/function_call/napi_binding.c \
+		benchmark/napi/function_call/binding.cc \
+		benchmark/napi/function_call/binding.gyp
 	$(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp rebuild \
 		--python="$(PYTHON)" \
-		--directory="$(shell pwd)/benchmark/misc/function_call" \
+		--directory="$(shell pwd)/benchmark/napi/function_call" \
 		--nodedir="$(shell pwd)"
 
 benchmark/misc/function_args/build/Release/binding.node: all \
@@ -324,25 +324,14 @@ ADDONS_BINDING_SOURCES := \
 # Depends on node-gyp package.json so that build-addons is (re)executed when
 # node-gyp is updated as part of an npm update.
 test/addons/.buildstamp: config.gypi \
-	deps/npm/node_modules/node-gyp/package.json \
+	deps/npm/node_modules/node-gyp/package.json tools/build-addons.js \
 	$(ADDONS_BINDING_GYPS) $(ADDONS_BINDING_SOURCES) \
 	deps/uv/include/*.h deps/v8/include/*.h \
 	src/node.h src/node_buffer.h src/node_object_wrap.h src/node_version.h \
 	test/addons/.docbuildstamp
-#	Cannot use $(wildcard test/addons/*/) here, it's evaluated before
-#	embedded addons have been generated from the documentation.
-#	Ignore folders without binding.gyp
-#	(https://github.com/nodejs/node/issues/14843)
-	@for dirname in test/addons/*/; do \
-		if [ ! -f "$$PWD/$${dirname}binding.gyp" ]; then \
-			continue; fi ; \
-		printf "\nBuilding addon $$PWD/$$dirname\n" ; \
-		env MAKEFLAGS="-j1" $(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp \
-		        --loglevel=$(LOGLEVEL) rebuild \
-			--python="$(PYTHON)" \
-			--directory="$$PWD/$$dirname" \
-			--nodedir="$$PWD" || exit 1 ; \
-	done
+	env npm_config_loglevel=$(LOGLEVEL) npm_config_nodedir="$$PWD" \
+		npm_config_python="$(PYTHON)" $(NODE) "$$PWD/tools/build-addons" \
+		"$$PWD/deps/npm/node_modules/node-gyp/bin/node-gyp.js" "$$PWD/test/addons"
 	touch $@
 
 .PHONY: build-addons
@@ -364,25 +353,15 @@ ADDONS_NAPI_BINDING_SOURCES := \
 
 # Implicitly depends on $(NODE_EXE), see the build-addons-napi rule for rationale.
 test/addons-napi/.buildstamp: config.gypi \
-	deps/npm/node_modules/node-gyp/package.json \
+	deps/npm/node_modules/node-gyp/package.json tools/build-addons.js \
 	$(ADDONS_NAPI_BINDING_GYPS) $(ADDONS_NAPI_BINDING_SOURCES) \
 	deps/uv/include/*.h deps/v8/include/*.h \
 	src/node.h src/node_buffer.h src/node_object_wrap.h src/node_version.h \
 	src/node_api.h src/node_api_types.h
-#	Cannot use $(wildcard test/addons-napi/*/) here, it's evaluated before
-#	embedded addons have been generated from the documentation.
-#	Ignore folders without binding.gyp
-#	(https://github.com/nodejs/node/issues/14843)
-	@for dirname in test/addons-napi/*/; do \
-		if [ ! -f "$$PWD/$${dirname}binding.gyp" ]; then \
-			continue; fi ; \
-		printf "\nBuilding addon $$PWD/$$dirname\n" ; \
-		env MAKEFLAGS="-j1" $(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp \
-		        --loglevel=$(LOGLEVEL) rebuild \
-			--python="$(PYTHON)" \
-			--directory="$$PWD/$$dirname" \
-			--nodedir="$$PWD" || exit 1 ; \
-	done
+	env npm_config_loglevel=$(LOGLEVEL) npm_config_nodedir="$$PWD" \
+		npm_config_python="$(PYTHON)" $(NODE) "$$PWD/tools/build-addons" \
+		"$$PWD/deps/npm/node_modules/node-gyp/bin/node-gyp.js" \
+		"$$PWD/test/addons-napi"
 	touch $@
 
 .PHONY: build-addons-napi
@@ -545,13 +524,6 @@ test-addons-clean:
 	$(RM) -r test/addons/*/build
 	$(RM) test/addons/.buildstamp test/addons/.docbuildstamp
 	$(MAKE) test-addons-napi-clean
-
-test-timers:
-	$(MAKE) --directory=tools faketime
-	$(PYTHON) tools/test.py $(PARALLEL_ARGS) --mode=$(BUILDTYPE_LOWER) timers
-
-test-timers-clean:
-	$(MAKE) --directory=tools clean
 
 test-async-hooks:
 	$(PYTHON) tools/test.py $(PARALLEL_ARGS) --mode=$(BUILDTYPE_LOWER) async-hooks
@@ -1074,13 +1046,19 @@ lint-md-build: tools/remark-cli/node_modules \
 .PHONY: lint-md
 ifneq ("","$(wildcard tools/remark-cli/node_modules/)")
 
-LINT_MD_DOC_FILES = $(shell ls doc/**/*.md)
+LINT_MD_DOC_FILES = $(shell ls doc/*.md doc/**/*.md)
 run-lint-doc-md = tools/remark-cli/cli.js -q -f $(LINT_MD_DOC_FILES)
+node_use_openssl = $(shell $(call available-node,"-p" \
+		   "process.versions.openssl != undefined"))
 # Lint all changed markdown files under doc/
 tools/.docmdlintstamp: $(LINT_MD_DOC_FILES)
+ifeq ($(node_use_openssl),true)
 	@echo "Running Markdown linter on docs..."
 	@$(call available-node,$(run-lint-doc-md))
 	@touch $@
+else
+	@echo "Skipping Markdown linter on docs (no crypto)"
+endif
 
 LINT_MD_TARGETS = src lib benchmark tools/doc tools/icu
 LINT_MD_ROOT_DOCS := $(wildcard *.md)
@@ -1089,9 +1067,13 @@ LINT_MD_MISC_FILES := $(shell find $(LINT_MD_TARGETS) -type f \
 run-lint-misc-md = tools/remark-cli/cli.js -q -f $(LINT_MD_MISC_FILES)
 # Lint other changed markdown files maintained by us
 tools/.miscmdlintstamp: $(LINT_MD_MISC_FILES)
+ifeq ($(node_use_openssl),true)
 	@echo "Running Markdown linter on misc docs..."
 	@$(call available-node,$(run-lint-misc-md))
 	@touch $@
+else
+	@echo "Skipping Markdown linter on misc docs (no crypto)"
+endif
 
 tools/.mdlintstamp: tools/.miscmdlintstamp tools/.docmdlintstamp
 
@@ -1145,7 +1127,7 @@ LINT_CPP_EXCLUDE += $(wildcard test/addons-napi/??_*/*.cc test/addons-napi/??_*/
 LINT_CPP_EXCLUDE += src/tracing/trace_event.h src/tracing/trace_event_common.h
 
 LINT_CPP_FILES = $(filter-out $(LINT_CPP_EXCLUDE), $(wildcard \
-	benchmark/misc/function_call/binding.cc \
+	benchmark/napi/function_call/binding.cc \
 	src/*.c \
 	src/*.cc \
 	src/*.h \

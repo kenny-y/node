@@ -245,7 +245,8 @@ once will result in an error being thrown.
 added: v1.0.0
 -->
 - `buffer` {Buffer}
-- `options` {Object}
+- `options` {Object} [`stream.transform` options][]
+  - `plaintextLength` {number}
 - Returns: {Cipher} for method chaining.
 
 When using an authenticated encryption mode (only `GCM` and `CCM` are currently
@@ -398,7 +399,7 @@ Once the `decipher.final()` method has been called, the `Decipher` object can
 no longer be used to decrypt data. Attempts to call `decipher.final()` more
 than once will result in an error being thrown.
 
-### decipher.setAAD(buffer)
+### decipher.setAAD(buffer[, options])
 <!-- YAML
 added: v1.0.0
 changes:
@@ -407,11 +408,17 @@ changes:
     description: This method now returns a reference to `decipher`.
 -->
 - `buffer` {Buffer | TypedArray | DataView}
-- Returns: {Cipher} for method chaining.
+- `options` {Object} [`stream.transform` options][]
+  - `plaintextLength` {number}
+- Returns: {Decipher} for method chaining.
 
 When using an authenticated encryption mode (only `GCM` and `CCM` are currently
 supported), the `decipher.setAAD()` method sets the value used for the
 _additional authenticated data_ (AAD) input parameter.
+
+The `options` argument is optional for `GCM`. When using `CCM`, the
+`plaintextLength` option must be specified and its value must match the length
+of the plaintext in bytes. See [CCM mode][].
 
 The `decipher.setAAD()` method must be called before [`decipher.update()`][].
 
@@ -427,23 +434,15 @@ changes:
     description: This method now returns a reference to `decipher`.
 -->
 - `buffer` {Buffer | TypedArray | DataView}
-- Returns: {Cipher} for method chaining.
+- Returns: {Decipher} for method chaining.
 
 When using an authenticated encryption mode (only `GCM` and `CCM` are currently
 supported), the `decipher.setAuthTag()` method is used to pass in the
 received _authentication tag_. If no tag is provided, or if the cipher text
 has been tampered with, [`decipher.final()`][] will throw, indicating that the
 cipher text should be discarded due to failed authentication. If the tag length
-is invalid according to [NIST SP 800-38D][], `decipher.setAuthTag()` will throw
-an error.
-
-Note that this Node.js version does not verify the length of GCM authentication
-tags. Such a check *must* be implemented by applications and is crucial to the
-authenticity of the encrypted data, otherwise, an attacker can use an
-arbitrarily short authentication tag to increase the chances of successfully
-passing authentication (up to 0.39%). It is highly recommended to associate one
-of the values 16, 15, 14, 13, 12, 8 or 4 bytes with each key, and to only permit
-authentication tags of that length, see [NIST SP 800-38D][].
+is invalid according to [NIST SP 800-38D][] or does not match the value of the
+`authTagLength` option, `decipher.setAuthTag()` will throw an error.
 
 The `decipher.setAuthTag()` method must be called before
 [`decipher.final()`][].
@@ -453,7 +452,7 @@ The `decipher.setAuthTag()` method must be called before
 added: v0.7.1
 -->
 - `autoPadding` {boolean} **Default:** `true`
-- Returns: {Cipher} for method chaining.
+- Returns: {Decipher} for method chaining.
 
 When data has been encrypted without standard block padding, calling
 `decipher.setAutoPadding(false)` will disable automatic padding to prevent
@@ -672,7 +671,7 @@ assert.strictEqual(aliceSecret.toString('hex'), bobSecret.toString('hex'));
 // OK
 ```
 
-### ECDH.convertKey(key, curve[, inputEncoding[, outputEncoding[, format]]])
+### Class Method: ECDH.convertKey(key, curve[, inputEncoding[, outputEncoding[, format]]])
 <!-- YAML
 added: v10.0.0
 -->
@@ -1361,9 +1360,9 @@ password always creates the same key. The low iteration count and
 non-cryptographically secure hash algorithm allow passwords to be tested very
 rapidly.
 
-In line with OpenSSL's recommendation to use PBKDF2 instead of
+In line with OpenSSL's recommendation to use a more modern algorithm instead of
 [`EVP_BytesToKey`][] it is recommended that developers derive a key and IV on
-their own using [`crypto.pbkdf2()`][] and to use [`crypto.createCipheriv()`][]
+their own using [`crypto.scrypt()`][] and to use [`crypto.createCipheriv()`][]
 to create the `Cipher` object. Users should not use ciphers with counter mode
 (e.g. CTR, GCM, or CCM) in `crypto.createCipher()`. A warning is emitted when
 they are used in order to avoid the risk of IV reuse that causes
@@ -1463,9 +1462,9 @@ password always creates the same key. The low iteration count and
 non-cryptographically secure hash algorithm allow passwords to be tested very
 rapidly.
 
-In line with OpenSSL's recommendation to use PBKDF2 instead of
+In line with OpenSSL's recommendation to use a more modern algorithm instead of
 [`EVP_BytesToKey`][] it is recommended that developers derive a key and IV on
-their own using [`crypto.pbkdf2()`][] and to use [`crypto.createDecipheriv()`][]
+their own using [`crypto.scrypt()`][] and to use [`crypto.createDecipheriv()`][]
 to create the `Decipher` object.
 
 ### crypto.createDecipheriv(algorithm, key, iv[, options])
@@ -1801,9 +1800,8 @@ The `iterations` argument must be a number set as high as possible. The
 higher the number of iterations, the more secure the derived key will be,
 but will take a longer amount of time to complete.
 
-The `salt` should also be as unique as possible. It is recommended that the
-salts are random and their lengths are at least 16 bytes. See
-[NIST SP 800-132][] for details.
+The `salt` should be as unique as possible. It is recommended that a salt is
+random and at least 16 bytes long. See [NIST SP 800-132][] for details.
 
 Example:
 
@@ -1867,9 +1865,8 @@ The `iterations` argument must be a number set as high as possible. The
 higher the number of iterations, the more secure the derived key will be,
 but will take a longer amount of time to complete.
 
-The `salt` should also be as unique as possible. It is recommended that the
-salts are random and their lengths are at least 16 bytes. See
-[NIST SP 800-132][] for details.
+The `salt` should be as unique as possible. It is recommended that a salt is
+random and at least 16 bytes long. See [NIST SP 800-132][] for details.
 
 Example:
 
@@ -2142,6 +2139,91 @@ The asynchronous version of `crypto.randomFill()` is carried out in a single
 threadpool request. To minimize threadpool task length variation, partition
 large `randomFill` requests when doing so as part of fulfilling a client
 request.
+
+### crypto.scrypt(password, salt, keylen[, options], callback)
+<!-- YAML
+added: v10.5.0
+-->
+- `password` {string|Buffer|TypedArray}
+- `salt` {string|Buffer|TypedArray}
+- `keylen` {number}
+- `options` {Object}
+  - `N` {number} CPU/memory cost parameter. Must be a power of two greater
+                 than one. **Default:** `16384`.
+  - `r` {number} Block size parameter. **Default:** `8`.
+  - `p` {number} Parallelization parameter. **Default:** `1`.
+  - `maxmem` {number} Memory upper bound. It is an error when (approximately)
+                      `128*N*r > maxmem` **Default:** `32 * 1024 * 1024`.
+- `callback` {Function}
+  - `err` {Error}
+  - `derivedKey` {Buffer}
+
+Provides an asynchronous [scrypt][] implementation. Scrypt is a password-based
+key derivation function that is designed to be expensive computationally and
+memory-wise in order to make brute-force attacks unrewarding.
+
+The `salt` should be as unique as possible. It is recommended that a salt is
+random and at least 16 bytes long. See [NIST SP 800-132][] for details.
+
+The `callback` function is called with two arguments: `err` and `derivedKey`.
+`err` is an exception object when key derivation fails, otherwise `err` is
+`null`. `derivedKey` is passed to the callback as a [`Buffer`][].
+
+An exception is thrown when any of the input arguments specify invalid values
+or types.
+
+```js
+const crypto = require('crypto');
+// Using the factory defaults.
+crypto.scrypt('secret', 'salt', 64, (err, derivedKey) => {
+  if (err) throw err;
+  console.log(derivedKey.toString('hex'));  // '3745e48...08d59ae'
+});
+// Using a custom N parameter. Must be a power of two.
+crypto.scrypt('secret', 'salt', 64, { N: 1024 }, (err, derivedKey) => {
+  if (err) throw err;
+  console.log(derivedKey.toString('hex'));  // '3745e48...aa39b34'
+});
+```
+
+### crypto.scryptSync(password, salt, keylen[, options])
+<!-- YAML
+added: v10.5.0
+-->
+- `password` {string|Buffer|TypedArray}
+- `salt` {string|Buffer|TypedArray}
+- `keylen` {number}
+- `options` {Object}
+  - `N` {number} CPU/memory cost parameter. Must be a power of two greater
+                 than one. **Default:** `16384`.
+  - `r` {number} Block size parameter. **Default:** `8`.
+  - `p` {number} Parallelization parameter. **Default:** `1`.
+  - `maxmem` {number} Memory upper bound. It is an error when (approximately)
+                      `128*N*r > maxmem` **Default:** `32 * 1024 * 1024`.
+- Returns: {Buffer}
+
+Provides a synchronous [scrypt][] implementation. Scrypt is a password-based
+key derivation function that is designed to be expensive computationally and
+memory-wise in order to make brute-force attacks unrewarding.
+
+The `salt` should be as unique as possible. It is recommended that a salt is
+random and at least 16 bytes long. See [NIST SP 800-132][] for details.
+
+An exception is thrown when key derivation fails, otherwise the derived key is
+returned as a [`Buffer`][].
+
+An exception is thrown when any of the input arguments specify invalid values
+or types.
+
+```js
+const crypto = require('crypto');
+// Using the factory defaults.
+const key1 = crypto.scryptSync('secret', 'salt', 64);
+console.log(key1.toString('hex'));  // '3745e48...08d59ae'
+// Using a custom N parameter. Must be a power of two.
+const key2 = crypto.scryptSync('secret', 'salt', 64, { N: 1024 });
+console.log(key2.toString('hex'));  // '3745e48...aa39b34'
+```
 
 ### crypto.setEngine(engine[, flags])
 <!-- YAML
@@ -2650,9 +2732,9 @@ the `crypto`, `tls`, and `https` modules and are generally specific to OpenSSL.
 [`crypto.createVerify()`]: #crypto_crypto_createverify_algorithm_options
 [`crypto.getCurves()`]: #crypto_crypto_getcurves
 [`crypto.getHashes()`]: #crypto_crypto_gethashes
-[`crypto.pbkdf2()`]: #crypto_crypto_pbkdf2_password_salt_iterations_keylen_digest_callback
 [`crypto.randomBytes()`]: #crypto_crypto_randombytes_size_callback
 [`crypto.randomFill()`]: #crypto_crypto_randomfill_buffer_offset_size_callback
+[`crypto.scrypt()`]: #crypto_crypto_scrypt_password_salt_keylen_options_callback
 [`decipher.final()`]: #crypto_decipher_final_outputencoding
 [`decipher.update()`]: #crypto_decipher_update_data_inputencoding_outputencoding
 [`diffieHellman.setPublicKey()`]: #crypto_diffiehellman_setpublickey_publickey_encoding
@@ -2686,5 +2768,6 @@ the `crypto`, `tls`, and `https` modules and are generally specific to OpenSSL.
 [RFC 3610]: https://www.rfc-editor.org/rfc/rfc3610.txt
 [RFC 4055]: https://www.rfc-editor.org/rfc/rfc4055.txt
 [initialization vector]: https://en.wikipedia.org/wiki/Initialization_vector
+[scrypt]: https://en.wikipedia.org/wiki/Scrypt
 [stream-writable-write]: stream.html#stream_writable_write_chunk_encoding_callback
 [stream]: stream.html
