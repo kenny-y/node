@@ -221,9 +221,9 @@ NAPI_MODULE_INIT() {
   EXPORT_FUNC("callWithObject", CallWithObject);
   EXPORT_FUNC("callWithTypedarray", CallWithTypedarray);
 
-  EXPORT_FUNC("callWith10Arguments", CallWithArguments);
-  EXPORT_FUNC("callWith100Arguments", CallWithArguments);
-  EXPORT_FUNC("callWith1000Arguments", CallWithArguments);
+  EXPORT_FUNC("callWith10Numbers", CallWithArguments);
+  EXPORT_FUNC("callWith100Numbers", CallWithArguments);
+  EXPORT_FUNC("callWith1000Numbers", CallWithArguments);
 
   return exports;
 }

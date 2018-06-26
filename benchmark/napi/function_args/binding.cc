@@ -81,9 +81,9 @@ void Initialize(v8::Local<v8::Object> target) {
   NODE_SET_METHOD(target, "callWithObject", CallWithObject);
   NODE_SET_METHOD(target, "callWithTypedarray", CallWithTypedarray);
 
-  NODE_SET_METHOD(target, "callWith10Arguments", CallWithArguments);
-  NODE_SET_METHOD(target, "callWith100Arguments", CallWithArguments);
-  NODE_SET_METHOD(target, "callWith1000Arguments", CallWithArguments);
+  NODE_SET_METHOD(target, "callWith10Numbers", CallWithArguments);
+  NODE_SET_METHOD(target, "callWith100Numbers", CallWithArguments);
+  NODE_SET_METHOD(target, "callWith1000Numbers", CallWithArguments);
 }
 
 NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)

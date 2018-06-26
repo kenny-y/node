@@ -24,7 +24,7 @@ try {
 }
 
 const argsTypes = ['String', 'Number', 'Object', 'Array', 'Typedarray',
-                   '10Arguments', '100Arguments', '1000Arguments'];
+                   '10Numbers', '100Numbers', '1000Numbers'];
 
 const generateArgs = (argType) => {
   let argsArray = [];
@@ -54,19 +54,19 @@ const generateArgs = (argType) => {
       arr[i] = Math.random() * 4294967296;
     }
     argsArray.push(arr);
-  } else if (argType === '10Arguments') {
+  } else if (argType === '10Numbers') {
     argsArray.push(10);
     // eslint-disable-next-line array-callback-return
     Array(10 - 1).fill().map((_, i) => {
       argsArray = [...argsArray, ...generateArgs('Number')];
     });
-  } else if (argType === '100Arguments') {
+  } else if (argType === '100Numbers') {
     argsArray.push(100);
     // eslint-disable-next-line array-callback-return
     Array(100 - 1).fill().map((_, i) => {
       argsArray = [...argsArray, ...generateArgs('Number')];
     });
-  } else if (argType === '1000Arguments') {
+  } else if (argType === '1000Numbers') {
     argsArray.push(1000);
     // eslint-disable-next-line array-callback-return
     Array(1000 - 1).fill().map((_, i) => {
