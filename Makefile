@@ -283,13 +283,13 @@ benchmark/napi/function_call/build/Release/binding.node: all \
 		--directory="$(shell pwd)/benchmark/napi/function_call" \
 		--nodedir="$(shell pwd)"
 
-benchmark/misc/function_args/build/Release/binding.node: all \
-		benchmark/misc/function_args/napi_binding.c \
-		benchmark/misc/function_args/binding.cc \
-		benchmark/misc/function_args/binding.gyp
+benchmark/napi/function_args/build/Release/binding.node: all \
+		benchmark/napi/function_args/napi_binding.c \
+		benchmark/napi/function_args/binding.cc \
+		benchmark/napi/function_args/binding.gyp
 	$(NODE) deps/npm/node_modules/node-gyp/bin/node-gyp rebuild \
 		--python="$(PYTHON)" \
-		--directory="$(shell pwd)/benchmark/misc/function_args" \
+		--directory="$(shell pwd)/benchmark/napi/function_args" \
 		--nodedir="$(shell pwd)"
 
 # Implicitly depends on $(NODE_EXE).  We don't depend on it explicitly because
