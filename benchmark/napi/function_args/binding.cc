@@ -4,16 +4,18 @@
 
 using v8::Local;
 using v8::Value;
+using v8::Number;
 using v8::String;
 using v8::Object;
 using v8::Array;
 using v8::ArrayBufferView;
 using v8::ArrayBuffer;
+using v8::FunctionCallbackInfo;
 
-void CallWithString(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallWithString(const FunctionCallbackInfo<Value>& args) {
   assert(args.Length() == 1 && args[0]->IsString());
   if (args.Length() == 1 && args[0]->IsString()) {
-    Local<String> str = args[0].As<v8::String>();
+    Local<String> str = args[0].As<String>();
     const int32_t length = str->Utf8Length() + 1;
     char* buf = new char[length];
     str->WriteUtf8(buf, length);
@@ -21,10 +23,10 @@ void CallWithString(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
-void CallWithArray(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallWithArray(const FunctionCallbackInfo<Value>& args) {
   assert(args.Length() == 1 && args[0]->IsArray());
   if (args.Length() == 1 && args[0]->IsArray()) {
-    const Local<Array> array = args[0].As<v8::Array>();
+    const Local<Array> array = args[0].As<Array>();
     uint32_t length = array->Length();
     for (uint32_t i = 0; i < length; ++ i) {
       Local<Value> v = array->Get(i);
@@ -32,31 +34,31 @@ void CallWithArray(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
-void CallWithNumber(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallWithNumber(const FunctionCallbackInfo<Value>& args) {
   assert(args.Length() == 1 && args[0]->IsNumber());
   if (args.Length() == 1 && args[0]->IsNumber()) {
-    double value = args[0].As<v8::Number>()->Value();
+    double value = args[0].As<Number>()->Value();
   }
 }
 
-void CallWithObject(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallWithObject(const FunctionCallbackInfo<Value>& args) {
   v8::Isolate* isolate = args.GetIsolate();
 
   assert(args.Length() == 1 && args[0]->IsObject());
   if (args.Length() == 1 && args[0]->IsObject()) {
-    Local<Object> obj = args[0].As<v8::Object>();
-    Local<Value> map = obj->Get(v8::String::NewFromUtf8(isolate, "map"));
-    Local<Value> oper = obj->Get(v8::String::NewFromUtf8(isolate, "operand"));
-    Local<Value> data = obj->Get(v8::String::NewFromUtf8(isolate, "data"));
-    Local<Value> reduce = obj->Get(v8::String::NewFromUtf8(isolate, "reduce"));
+    Local<Object> obj = args[0].As<Object>();
+    Local<Value> map = obj->Get(String::NewFromUtf8(isolate, "map"));
+    Local<Value> operand = obj->Get(String::NewFromUtf8(isolate, "operand"));
+    Local<Value> data = obj->Get(String::NewFromUtf8(isolate, "data"));
+    Local<Value> reduce = obj->Get(String::NewFromUtf8(isolate, "reduce"));
   }
 }
 
-void CallWithTypedarray(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallWithTypedarray(const FunctionCallbackInfo<Value>& args) {
   assert(args.Length() == 1 && args[0]->IsArrayBufferView());
   if (args.Length() == 1 && args[0]->IsArrayBufferView()) {
     assert(args[0]->IsArrayBufferView());
-    Local<ArrayBufferView> view = args[0].As<v8::ArrayBufferView>();
+    Local<ArrayBufferView> view = args[0].As<ArrayBufferView>();
     size_t byte_offset = view->ByteOffset();
     size_t byte_length = view->ByteLength();
     assert(view->HasBuffer());
@@ -66,7 +68,7 @@ void CallWithTypedarray(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
-void CallWithArguments(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void CallWithArguments(const FunctionCallbackInfo<Value>& args) {
   assert(args.Length() > 1 && args[0]->IsNumber());
   if (args.Length() > 1 && args[0]->IsNumber()) {
     uint32_t loop = args[0].As<v8::Uint32>()->Value();
@@ -78,7 +80,7 @@ void CallWithArguments(const v8::FunctionCallbackInfo<v8::Value>& args) {
   }
 }
 
-void Initialize(v8::Local<v8::Object> target) {
+void Initialize(Local<Object> target) {
   NODE_SET_METHOD(target, "callWithString", CallWithString);
   NODE_SET_METHOD(target, "callWithLongString", CallWithString);
 

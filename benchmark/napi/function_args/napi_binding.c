@@ -96,8 +96,8 @@ static napi_value CallWithObject(napi_env env, napi_callback_info info) {
 
   assert(types[0] == napi_object);
   if (types[0] == napi_object) {
-    napi_value value;
     napi_value key;
+    napi_value value;
 
     status = napi_create_string_utf8(env, "map", strlen("map"), &key);
     assert(status == napi_ok);
@@ -195,6 +195,7 @@ static napi_value CallWithArguments(napi_env env, napi_callback_info info) {
   return NULL;
 }
 
+
 #define EXPORT_FUNC(name, func) \
   do { \
     napi_value func ## _v; \
@@ -208,6 +209,7 @@ static napi_value CallWithArguments(napi_env env, napi_callback_info info) {
     status = napi_set_named_property(env, exports, name, func ## _v); \
     assert(status == napi_ok); \
   } while (0);
+
 
 NAPI_MODULE_INIT() {
   napi_status status;
