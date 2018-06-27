@@ -28,10 +28,6 @@ try {
 const argsTypes = ['String', 'Number', 'Object', 'Array', 'Typedarray',
                    '10Numbers', '100Numbers', '1000Numbers'];
 
-const range = function (size) {
-  return [...Array(size).keys()];
-}
-
 const generateArgs = (argType) => {
   let args = [];
 
@@ -62,17 +58,17 @@ const generateArgs = (argType) => {
     args.push(arr);
   } else if (argType === '10Numbers') {
     args.push(10);
-    for (let i in range(9)) {
+    for (let i = 0; i < 9; ++i) {
       args = [...args, ...generateArgs('Number')];
     }
   } else if (argType === '100Numbers') {
     args.push(100);
-    for (let i in range(99)) {
+    for (let i = 0; i < 99; ++i) {
       args = [...args, ...generateArgs('Number')];
     }
   } else if (argType === '1000Numbers') {
     args.push(1000);
-    for (let i in range(999)) {
+    for (let i = 0; i < 999; ++i) {
       args = [...args, ...generateArgs('Number')];
     }
   }
