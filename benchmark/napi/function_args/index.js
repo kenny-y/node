@@ -28,17 +28,21 @@ try {
 const argsTypes = ['String', 'Number', 'Object', 'Array', 'Typedarray',
                    '10Numbers', '100Numbers', '1000Numbers'];
 
+const range = function (size) {
+  return [...Array(size).keys()];
+}
+
 const generateArgs = (argType) => {
-  let argsArray = [];
+  let args = [];
 
   if (argType === 'String') {
-    argsArray.push('The quick brown fox jumps over the lazy dog');
+    args.push('The quick brown fox jumps over the lazy dog');
   } else if (argType === 'LongString') {
-    argsArray.push(Buffer.alloc(65536, '42').toString());
+    args.push(Buffer.alloc(32768, '42').toString());
   } else if (argType === 'Number') {
-    argsArray.push(31415916);
+    args.push(Math.floor(314158964 * Math.random()));
   } else if (argType === 'Object') {
-    argsArray.push({
+    args.push({
       map: 'add',
       operand: 10,
       data: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
@@ -49,34 +53,31 @@ const generateArgs = (argType) => {
     for (let i = 0; i < 50; ++i) {
       arr.push(Math.random() * 10e9);
     }
-    argsArray.push(arr);
+    args.push(arr);
   } else if (argType === 'Typedarray') {
     const arr = new Uint32Array(1000);
     for (let i = 0; i < 1000; ++i) {
       arr[i] = Math.random() * 4294967296;
     }
-    argsArray.push(arr);
+    args.push(arr);
   } else if (argType === '10Numbers') {
-    argsArray.push(10);
-    // eslint-disable-next-line array-callback-return
-    Array(10 - 1).fill().map((_, i) => {
-      argsArray = [...argsArray, ...generateArgs('Number')];
-    });
+    args.push(10);
+    for (let i in range(9)) {
+      args = [...args, ...generateArgs('Number')];
+    }
   } else if (argType === '100Numbers') {
-    argsArray.push(100);
-    // eslint-disable-next-line array-callback-return
-    Array(100 - 1).fill().map((_, i) => {
-      argsArray = [...argsArray, ...generateArgs('Number')];
-    });
+    args.push(100);
+    for (let i in range(99)) {
+      args = [...args, ...generateArgs('Number')];
+    }
   } else if (argType === '1000Numbers') {
-    argsArray.push(1000);
-    // eslint-disable-next-line array-callback-return
-    Array(1000 - 1).fill().map((_, i) => {
-      argsArray = [...argsArray, ...generateArgs('Number')];
-    });
+    args.push(1000);
+    for (let i in range(999)) {
+      args = [...args, ...generateArgs('Number')];
+    }
   }
 
-  return argsArray;
+  return args;
 };
 
 const getArgs = (type) => {
