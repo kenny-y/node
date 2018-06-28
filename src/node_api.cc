@@ -572,8 +572,7 @@ class CallbackWrapperBase : public CallbackWrapper {
         _cbdata(v8::Local<v8::Object>::Cast(cbinfo.Data())) {
     // Note that there is no way we can tell whether `_bundle` is legit
     _bundle = reinterpret_cast<CallbackBundle*>(
-        v8::Local<v8::External>::Cast(
-            _cbdata->GetInternalField(kCallbackBundleIndex))->Value());
+        _cbdata->GetAlignedPointerFromInternalField(kCallbackBundleIndex));
     _data = _bundle->cb_data;
   }
 
@@ -736,9 +735,9 @@ v8::Local<v8::Object> CreateFunctionCallbackData(napi_env env,
   bundle->env = env;
   bundle->BindLifecycleTo(env->isolate, cbdata);
 
-  cbdata->SetInternalField(
+  cbdata->SetAlignedPointerInInternalField(
       v8impl::kCallbackBundleIndex,
-      v8::External::New(isolate, reinterpret_cast<void*>(bundle)));
+      bundle);
 
   return cbdata;
 }
@@ -765,9 +764,9 @@ v8::Local<v8::Object> CreateAccessorCallbackData(napi_env env,
   bundle->env = env;
   bundle->BindLifecycleTo(env->isolate, cbdata);
 
-  cbdata->SetInternalField(
+  cbdata->SetAlignedPointerInInternalField(
       v8impl::kCallbackBundleIndex,
-      v8::External::New(isolate, reinterpret_cast<void*>(bundle)));
+      bundle);
 
   return cbdata;
 }
